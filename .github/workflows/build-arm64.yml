@@ -1,0 +1,70 @@
+# GenOffice ARM64 Linux Build Workflow
+# 使用方法：在 Fork 的仓库中创建 .github/workflows/build-arm64.yml 文件，粘贴此内容即可
+
+name: Build ARM64 Linux
+
+on:
+  workflow_dispatch:  # 允许手动触发
+  release:
+    types: [published]  # 发布 Release 时自动触发
+
+jobs:
+  build:
+    name: Build on ARM64
+    runs-on: ubuntu-24.04-arm  # 使用 ARM64 架构的 Runner
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+
+      - name: Install system dependencies (FUSE)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libfuse2t64 libgtk-3-0 libnotify4 libnss3 \
+            libxss1 libasound2 libdrm2 libgbm1 libxcomposite1 libxdamage1 \
+            libxrandr2 fonts-liberation fonts-noto-cjk
+
+      - name: Install project dependencies
+        run: npm ci
+
+      - name: Generate test fixtures
+        run: npm run fixtures
+
+      - name: Run unit tests (non-blocking)
+        run: npm test
+        continue-on-error: true
+
+      - name: Build and package for Linux
+        run: npm run dist:linux
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: genoffice-arm64-build
+          path: |
+            out/**/*.AppImage
+            out/**/*.deb
+            out/**/*.rpm
+          retention-days: 30
+
+      - name: Upload to release (if released)
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            out/**/*.AppImage
+            out/**/*.deb
+            out/**/*.rpm
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
