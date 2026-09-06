@@ -4,14 +4,14 @@
 name: Build ARM64 Linux
 
 on:
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch: # 允许手动触发
   release:
-    types: [published]  # 发布 Release 时自动触发
+    types: [published] # 发布 Release 时自动触发
 
 jobs:
   build:
     name: Build on ARM64
-    runs-on: ubuntu-24.04-arm  # 使用 ARM64 架构的 Runner
+    runs-on: ubuntu-24.04-arm # 使用 ARM64 架构的 Runner
 
     steps:
       - name: Checkout repository
@@ -21,7 +21,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
-          cache: 'npm'
+          cache: "npm"
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
