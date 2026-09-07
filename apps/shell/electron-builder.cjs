@@ -463,6 +463,14 @@ const config = {
   deb: {
     artifactName: 'genoffice_${version}_${arch}.deb',
     packageName: 'genoffice',
+    depends: [
+      'libasound2 | libasound2t64',
+      'libgbm1',
+      'libdrm2',
+      'libxcomposite1',
+      'libxdamage1',
+      'libxrandr2',
+    ],
   },
   // Same "@genoffice/shell" naming problem as deb: spell the artifact name
   // out (${arch} expands to the rpm arch string, x86_64) and pin the rpm

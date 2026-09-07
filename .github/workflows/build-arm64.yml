@@ -58,6 +58,13 @@ jobs:
         env:
           GENOFFICE_LINUX_ARCH: arm64
 
+      - name: Validate ARM64 deb runtime metadata
+        run: |
+          deb="apps/shell/release/genoffice_*_arm64.deb"
+          test -f "$deb"
+          dpkg-deb -I "$deb" | grep -Eq 'Depends:.*libasound2'
+          dpkg-deb --ctrl-tarfile "$deb" | tar -xOf - ./postinst | grep -q "chmod 4755"
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
