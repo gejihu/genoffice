@@ -345,6 +345,7 @@ describe('replace_blocks keeps the replaced blocks formatting (issue #175)', () 
       element: document.createElement('div'),
       extensions: editorExtensions,
     })
+    editors.push(editor)
     editor.commands.setContent(blocksToPmDoc(parsed.blocks) as never)
     const before = parsed.blocks.find((b) => b.type === 'paragraph')!
     expect(before.format?.indentFirstLine).toBe(480)

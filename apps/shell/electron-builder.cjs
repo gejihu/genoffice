@@ -59,6 +59,7 @@ const fontCdnUrl = normalizeHttpsBaseUrl(
 // alias) keys off which dmgs exist, so flipping this flag is the single
 // switch.
 const includeMacX64 = process.env.GENOFFICE_MAC_X64 === '1'
+const linuxArch = process.env.GENOFFICE_LINUX_ARCH || (process.arch === 'arm64' ? 'arm64' : 'x64')
 
 // The gsk CLI tree below is copied verbatim from node_modules, and the
 // nested commander path depends on npm's current hoisting layout — fail the
@@ -403,10 +404,8 @@ const config = {
   },
   // Unlike win (which cross-compiles the sidecar to an explicit target
   // triple), linux takes it from cargo's host-native target/release/ — the
-  // same source mac uses. So no `arch` is pinned here: electron-builder
-  // defaults to the build host's architecture, which is the only one the
-  // sidecar was actually built for. Packaging arm64 on an x64 host, or the
-  // reverse, needs a matching `cargo build --target` first.
+  // same source mac uses. Keep the package architecture aligned with that
+  // native build, while allowing CI to select it explicitly.
   linux: {
     // AppImage (self-contained, any distro) + deb (apt install, pulls in the
     // GTK/NSS runtime deps) + rpm (dnf/zypper install on Fedora / RHEL /
@@ -415,9 +414,9 @@ const config = {
     // README download links and the already-published linux-v0.5.149 release
     // use them.
     target: [
-      { target: 'AppImage', arch: ['x64'] },
-      { target: 'deb', arch: ['x64'] },
-      { target: 'rpm', arch: ['x64'] },
+      { target: 'AppImage', arch: [linuxArch] },
+      { target: 'deb', arch: [linuxArch] },
+      { target: 'rpm', arch: [linuxArch] },
     ],
     // deb control metadata; values match the manually published 0.5.149 deb
     // so apt sees the new packages as the same lineage. Homepage comes from
