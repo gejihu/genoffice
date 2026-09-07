@@ -25,8 +25,26 @@ const NUM_IDS = { bullet: BLANK_BULLET_NUM_ID, ordered: BLANK_ORDERED_NUM_ID }
 const TRACK = { author: 'AI Assistant' }
 const editors: Editor[] = []
 
-afterEach(() => {
-  for (const editor of editors.splice(0)) editor.destroy()
+// Ensure editors are properly destroyed and their DOM removed; wait a short
+// time slice to allow any pending timers/RAF callbacks to run and avoid
+// unhandled exceptions in the test runner.
+afterEach(async () => {
+  for (const editor of editors.splice(0)) {
+    try {
+      const dom = (editor as any).view?.dom
+      try {
+        editor.destroy()
+      } catch {
+        // ignore destroy errors during cleanup
+      }
+      if (dom && dom.parentNode) dom.parentNode.removeChild(dom)
+    } catch {
+      // ignore cleanup errors and continue
+    }
+  }
+  // Give pending timers/RAF a short chance to complete to avoid uncaught
+  // exceptions after the test ends (prosemirror may schedule async callbacks).
+  await new Promise((r) => setTimeout(r, 50))
 })
 
 /** SimSun 12pt body, Times New Roman Latin, 2-char first-line indent, justified, 1.5 lines */
@@ -51,8 +69,12 @@ type BlockJson = {
 async function createEditor(blocks: PmNode[]) {
   const { editorExtensions } = await import('../src/renderer/editor/extensions')
   const parsed = await parseDocx(await buildBlankDocx())
+  // Mount the editor element into document.body to make ProseMirror's
+  // measurements/observers behave consistently in the test environment.
+  const container = document.createElement('div')
+  document.body.appendChild(container)
   const editor = new Editor({
-    element: document.createElement('div'),
+    element: container,
     extensions: editorExtensions,
   })
   editors.push(editor)
