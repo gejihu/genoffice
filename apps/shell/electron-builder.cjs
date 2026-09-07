@@ -234,6 +234,7 @@ function assertModuleTreesPresent() {
 const config = {
   appId: 'com.genoffice.app',
   productName: 'GenOffice',
+  publish: [],
   // Resolved from the installed electron package so dependency bumps can
   // never leave a stale hard-coded pin behind (packaging would silently ship
   // the old runtime).
@@ -498,13 +499,13 @@ const config = {
   // upgrade with `dnf install ./<new>.rpm`. Packaging needs rpmbuild on the
   // build host (the `rpm` apt package on Ubuntu; CI installs it).
   //
-  // publish: null (explicit) keeps the rpm out of the electron-updater feed
-  // and off the CDN entirely: the rpm is a GitHub-Release download only, so
-  // latest-linux.yml keeps listing exactly what the CDN pipeline uploads
-  // (AppImage + deb) and the promote workflow needs no rpm alias.
+  // An empty list keeps the rpm out of the electron-updater feed and off the
+  // CDN entirely. `null` triggers a bug in electron-builder's update-info
+  // generation when multiple Linux targets are built together.
   rpm: {
     artifactName: 'genoffice-${version}.${arch}.rpm',
     packageName: 'genoffice',
+    publish: [],
   },
   nsis: {
     oneClick: false,
