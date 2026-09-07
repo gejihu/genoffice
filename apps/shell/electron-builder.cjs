@@ -28,7 +28,18 @@
 
 const { execFileSync } = require('node:child_process')
 const { existsSync, rmSync } = require('node:fs')
-const { join } = require('node:path')
+const { dirname, join } = require('node:path')
+
+const repoRoot = join(__dirname, '../..')
+
+function resolveFromRepo(specifier, baseDir = repoRoot) {
+  return require.resolve(specifier, { paths: [baseDir] })
+}
+
+function resolvePackageDir(specifier, baseDir = repoRoot) {
+  const entry = resolveFromRepo(specifier, baseDir)
+  return dirname(entry)
+}
 
 function normalizeHttpsBaseUrl(name, value) {
   if (!value || !value.trim()) return null
@@ -61,6 +72,14 @@ const fontCdnUrl = normalizeHttpsBaseUrl(
 const includeMacX64 = process.env.GENOFFICE_MAC_X64 === '1'
 const linuxArch = process.env.GENOFFICE_LINUX_ARCH || (process.arch === 'arm64' ? 'arm64' : 'x64')
 
+const gskCliDir = resolvePackageDir('@genspark/cli')
+const gskCommanderDir = resolvePackageDir('commander', gskCliDir)
+const wsDir = resolvePackageDir('ws')
+const electronLicense = resolveFromRepo('electron/dist/LICENSES.chromium.html')
+const pdfiumPackageDir = dirname(resolveFromRepo('@embedpdf/pdfium'))
+const pdfiumWasm = join(pdfiumPackageDir, 'pdfium.wasm')
+const harfbuzzWasm = resolveFromRepo('harfbuzzjs/hb-subset.wasm', join(__dirname, '../pdf'))
+
 // The gsk CLI tree below is copied verbatim from node_modules, and the
 // nested commander path depends on npm's current hoisting layout — fail the
 // build with a clear message if an install ever changes it, instead of
@@ -70,17 +89,17 @@ const linuxArch = process.env.GENOFFICE_LINUX_ARCH || (process.arch === 'arm64' 
 // script was replaced by the lazy `install-electron` bin), and electron-builder
 // exits 0 on a missing extraResources source, so without this check the
 // installer would silently ship without the Chromium license.
-for (const rel of [
-  '../../node_modules/@genspark/cli',
-  '../../node_modules/@genspark/cli/node_modules/commander',
-  '../../node_modules/ws',
-  '../../node_modules/electron/dist/LICENSES.chromium.html',
-  '../../node_modules/@embedpdf/pdfium/dist/pdfium.wasm',
-  '../pdf/node_modules/harfbuzzjs/hb-subset.wasm',
+for (const [label, fileOrDir] of [
+  ['@genspark/cli', gskCliDir],
+  ['@genspark/cli commander', gskCommanderDir],
+  ['ws', wsDir],
+  ['electron LICENSES.chromium.html', electronLicense],
+  ['@embedpdf/pdfium wasm', pdfiumWasm],
+  ['harfbuzzjs wasm', harfbuzzWasm],
 ]) {
-  if (!existsSync(join(__dirname, rel))) {
+  if (!existsSync(fileOrDir)) {
     throw new Error(
-      `electron-builder extraResources source missing: ${rel} (npm hoisting changed?)`,
+      `electron-builder extraResources source missing: ${label} (npm hoisting changed?)`,
     )
   }
 }
@@ -255,11 +274,11 @@ const config = {
     // PDF text editing engines: the bundled main resolves these under
     // Resources/wasm when node_modules is absent (apps/pdf/src/main/wasm-path.ts)
     {
-      from: '../../node_modules/@embedpdf/pdfium/dist/pdfium.wasm',
+      from: pdfiumWasm,
       to: 'wasm/pdfium.wasm',
     },
     {
-      from: '../pdf/node_modules/harfbuzzjs/hb-subset.wasm',
+      from: harfbuzzWasm,
       to: 'wasm/hb-subset.wasm',
     },
     // platform system-OCR helpers for scanned-page recovery (each exists only
@@ -274,15 +293,15 @@ const config = {
       to: 'ocr/win-ocr.exe',
     },
     {
-      from: '../../node_modules/@genspark/cli',
+      from: gskCliDir,
       to: 'gsk/node_modules/@genspark/cli',
     },
     {
-      from: '../../node_modules/@genspark/cli/node_modules/commander',
+      from: gskCommanderDir,
       to: 'gsk/node_modules/commander',
     },
     {
-      from: '../../node_modules/ws',
+      from: wsDir,
       to: 'gsk/node_modules/ws',
     },
   ],
@@ -486,7 +505,6 @@ const config = {
   rpm: {
     artifactName: 'genoffice-${version}.${arch}.rpm',
     packageName: 'genoffice',
-    publish: null,
   },
   nsis: {
     oneClick: false,

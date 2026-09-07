@@ -36,12 +36,12 @@ jobs:
         with:
           toolchain: stable
 
-      - name: Install system dependencies (FUSE)
+      - name: Install system dependencies (FUSE + Linux package tooling)
         run: |
           sudo apt-get update
           sudo apt-get install -y libfuse2t64 libgtk-3-0 libnotify4 libnss3 \
             libxss1 libasound2t64 libdrm2 libgbm1 libxcomposite1 libxdamage1 \
-            libxrandr2 fonts-liberation fonts-noto-cjk
+            libxrandr2 fonts-liberation fonts-noto-cjk rpm cpio
 
       - name: Install project dependencies
         run: npm ci
