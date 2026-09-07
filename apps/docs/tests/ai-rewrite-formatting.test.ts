@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { Editor } from '@tiptap/core'
 import { TextSelection } from '@tiptap/pm/state'
 import {
@@ -23,6 +23,11 @@ import { executeTool } from '../src/renderer/ai/tools'
 
 const NUM_IDS = { bullet: BLANK_BULLET_NUM_ID, ordered: BLANK_ORDERED_NUM_ID }
 const TRACK = { author: 'AI Assistant' }
+const editors: Editor[] = []
+
+afterEach(() => {
+  for (const editor of editors.splice(0)) editor.destroy()
+})
 
 /** SimSun 12pt body, Times New Roman Latin, 2-char first-line indent, justified, 1.5 lines */
 const BODY_STYLE = {
@@ -50,6 +55,7 @@ async function createEditor(blocks: PmNode[]) {
     element: document.createElement('div'),
     extensions: editorExtensions,
   })
+  editors.push(editor)
   editor.commands.setContent(blocksToPmDoc(parsed.blocks) as never)
   const pm = blocks.map((b) => editor.schema.nodeFromJSON(b))
   editor.view.dispatch(editor.state.tr.replaceWith(0, editor.state.doc.content.size, pm))
